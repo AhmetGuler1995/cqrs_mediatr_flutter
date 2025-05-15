@@ -1,0 +1,3 @@
+class CommandRegisterHandler {
+  const CommandRegisterHandler();
+}

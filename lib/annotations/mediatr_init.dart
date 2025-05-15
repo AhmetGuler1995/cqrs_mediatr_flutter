@@ -1,0 +1,3 @@
+class MediatrInit {
+  const MediatrInit();
+}

@@ -1,0 +1,3 @@
+class QueryRegisterHandler {
+  QueryRegisterHandler();
+}

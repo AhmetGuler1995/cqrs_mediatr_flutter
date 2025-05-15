@@ -1,0 +1,3 @@
+class CommandResultPaternModel {
+  const CommandResultPaternModel();
+}

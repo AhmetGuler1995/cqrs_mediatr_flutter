@@ -1,0 +1,3 @@
+class MainMediatrFile {
+  const MainMediatrFile();
+}
