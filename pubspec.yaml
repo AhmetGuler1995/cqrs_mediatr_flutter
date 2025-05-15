@@ -1,6 +1,6 @@
 name: cqrs_mediatr_flutter
 description: "It is a CQRS Dart package with a code generation structure suitable for the result pattern relationship in backend APIs, where you can easily apply the CQRS design pattern in Dart projects."
-version: 1.0.1
+version: 1.0.2
 maintainer: Ahmet Güler (@AhmetGuler1995)
 homepage: https://github.com/AhmetGuler1995/cqrs_mediatr_flutter
 repository: https://github.com/AhmetGuler1995/cqrs_mediatr_flutter.git

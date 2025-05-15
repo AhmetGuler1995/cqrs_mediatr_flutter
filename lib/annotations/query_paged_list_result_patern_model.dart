@@ -1,3 +1,3 @@
 class QueryPagedListResultPaternModel {
-  QueryPagedListResultPaternModel();
+  const QueryPagedListResultPaternModel();
 }

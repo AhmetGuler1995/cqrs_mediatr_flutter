@@ -1,3 +1,3 @@
 class QueryRegisterHandler {
-  QueryRegisterHandler();
+  const QueryRegisterHandler();
 }
