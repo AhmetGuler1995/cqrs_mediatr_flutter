@@ -6,94 +6,121 @@ import 'package:cqrs_mediatr_flutter/annotations/main_mediatr_file.dart';
 import 'package:cqrs_mediatr_flutter/annotations/query_list_result_patern_model.dart';
 import 'package:cqrs_mediatr_flutter/annotations/query_paged_list_result_patern_model.dart';
 import 'package:cqrs_mediatr_flutter/annotations/query_result_patern_model.dart';
+import 'package:glob/glob.dart';
 import 'package:source_gen/source_gen.dart';
 import 'package:path/path.dart' as path;
 
 class MediatrCreator extends Generator {
+  final BuilderOptions options;
+
+  MediatrCreator(this.options);
+
   @override
-  FutureOr<String?> generate(LibraryReader library, BuildStep buildStep) {
+  Future<String?> generate(LibraryReader library, BuildStep buildStep) async {
     if (!library
         .annotatedWith(TypeChecker.fromRuntime(MainMediatrFile))
         .isNotEmpty) {
       return null; // MainMediatrFile ile işaretlenmiş değilse atla
     }
-    var mainPartFile =
-        library
-            .annotatedWith(TypeChecker.fromRuntime(MainMediatrFile))
-            .firstOrNull;
 
-    var partSourceName =
-        'part of \'${mainPartFile?.element.source?.shortName}\'';
+    // var mainPartFile =
+    //     library
+    //         .annotatedWith(TypeChecker.fromRuntime(MainMediatrFile))
+    //         .firstOrNull;
 
-    var commandResultFile =
-        library
-            .annotatedWith(TypeChecker.fromRuntime(CommandResultPaternModel))
-            .firstOrNull;
+    // var partSourceName =
+    //     'part of \'${mainPartFile?.element.source?.shortName}\'';
+
+    final assetIds = await buildStep.findAssets(Glob('lib/**/*.dart')).toList();
+
+    AnnotatedElement? commandResultFile = await _getCommandAnnotatedElement(
+      assetIds,
+      buildStep,
+    );
 
     if (commandResultFile == null) {
       return null; // CommandResultPaternModel ile işaretlenmiş değilse atla
     }
+    print('Command Result File Name: ${commandResultFile.element.name}');
 
-    var queryListResultFile =
-        library
-            .annotatedWith(TypeChecker.fromRuntime(QueryListResultPaternModel))
-            .firstOrNull;
+    AnnotatedElement? queryListResultFile = await _getQueryListAnnotatedElement(
+      assetIds,
+      buildStep,
+    );
 
     if (queryListResultFile == null) {
       return null; // QueryListResultPaternModel ile işaretlenmiş değilse atla
     }
 
-    var queryResultFile =
-        library
-            .annotatedWith(TypeChecker.fromRuntime(QueryResultPaternModel))
-            .firstOrNull;
+    print('Query List Result File Name: ${queryListResultFile.element.name}');
+
+    var queryResultFile = await _getQueryAnnotatedElement(assetIds, buildStep);
 
     if (queryResultFile == null) {
-      return null; // QueryResultPaternModel ile işaretlenmiş değilse atla
+      return null;
     }
-
-    var queryPagedResultFile =
-        library
-            .annotatedWith(
-              TypeChecker.fromRuntime(QueryPagedListResultPaternModel),
-            )
-            .firstOrNull;
+    print('Query Result File Name: ${queryResultFile.element.name}');
+    var queryPagedResultFile = await _getQueryPagedListAnnotatedElement(
+      assetIds,
+      buildStep,
+    );
 
     if (queryPagedResultFile == null) {
       return null; // QueryPagedListResultPaternModel ile işaretlenmiş değilse atla
     }
+    List<String> imports = <String>[];
+
+    print('Query Paged Result File Name: ${queryResultFile.element.name}');
 
     var commandResultFileImportPath = _convertPathToImport(
       uri: _getClassFullPath(commandResultFile)!,
       buildStep: buildStep,
     );
+    if (!imports.any((e) => e == 'import \'$commandResultFileImportPath\';')) {
+      imports.add('import \'$commandResultFileImportPath\';');
+    }
+    print('Command Result Import Content: $commandResultFileImportPath');
 
     var queryResultFileImportPath = _convertPathToImport(
       uri: _getClassFullPath(queryResultFile)!,
       buildStep: buildStep,
     );
+    if (!imports.any((e) => e == 'import \'$queryResultFileImportPath\';')) {
+      imports.add('import \'$queryResultFileImportPath\';');
+    }
+    print('Query Result Import Content: $queryResultFileImportPath');
 
     var queryListResultFileImportPath = _convertPathToImport(
       uri: _getClassFullPath(queryListResultFile)!,
       buildStep: buildStep,
     );
+
+    if (!imports.any(
+      (e) => e == 'import \'$queryListResultFileImportPath\';',
+    )) {
+      imports.add('import \'$queryListResultFileImportPath\';');
+    }
+
+    print('Query List Result Import Content: $queryListResultFileImportPath');
+
     var queryPagedListResultFileImportPath = _convertPathToImport(
       uri: _getClassFullPath(queryPagedResultFile)!,
       buildStep: buildStep,
     );
+    if (!imports.any(
+      (e) => e == 'import \'$queryPagedListResultFileImportPath\';',
+    )) {
+      imports.add('import \'$queryPagedListResultFileImportPath\';');
+    }
+    print(
+      'Query Paged List Result Import Content: $queryPagedListResultFileImportPath',
+    );
 
     final buffer = StringBuffer();
+
     buffer.writeln('// GENERATED CODE - DO NOT MODIFY BY HAND');
 
-    buffer.writeln('import \'$commandResultFileImportPath\';');
-
-    buffer.writeln('import \'$queryResultFileImportPath\';');
-
-    buffer.writeln('import \'$queryListResultFileImportPath\';');
-
-    buffer.writeln('import \'$queryPagedListResultFileImportPath\';');
-
-    buffer.writeln('$partSourceName');
+    imports.forEach(buffer.writeln);
 
     buffer.writeln('abstract class IBaseCommand<TResult> {}');
 
@@ -143,6 +170,10 @@ class MediatrCreator extends Generator {
 
     buffer.writeln(
       'typedef _InstanceFactoryCheckerQueryPagedList<TResult,Command extends IQueryPagedList<TResult>> = _IQueryPagedListHandler<Command, TResult> Function();',
+    );
+
+    buffer.writeln(
+      'typedef InstanceFactory<T extends IBaseHandler> = T Function();',
     );
 
     buffer.writeln(
@@ -242,6 +273,7 @@ class MediatrCreator extends Generator {
       ..writeln('if (handlers.isEmpty) {')
       ..writeln('_commands.add(handler);')
       ..writeln('}')
+      ..writeln('}')
       ..writeln('')
       ..writeln(
         'void registerQueryHandler<TResult,Command extends IBaseQuery<TResult>,Handler extends _IQueryHandler<Command, TResult>>(InstanceFactory<Handler> handler) {',
@@ -251,6 +283,7 @@ class MediatrCreator extends Generator {
       )
       ..writeln('if (handlers.isEmpty) {')
       ..writeln('_commands.add(handler);')
+      ..writeln('}')
       ..writeln('}')
       ..writeln('')
       ..writeln(
@@ -262,6 +295,7 @@ class MediatrCreator extends Generator {
       ..writeln('if (handlers.isEmpty) {')
       ..writeln('_commands.add(handler);')
       ..writeln('}')
+      ..writeln('}')
       ..writeln('')
       ..writeln(
         'void registerQueryPagedListHandler<TResult,Command extends IBaseQuery<TResult>,Handler extends _IQueryPagedListHandler<Command, TResult>>(InstanceFactory<Handler> handler) {',
@@ -271,6 +305,7 @@ class MediatrCreator extends Generator {
       )
       ..writeln('if (handlers.isEmpty) {')
       ..writeln('_commands.add(handler);')
+      ..writeln('}')
       ..writeln('}')
       ..writeln('')
       ..writeln('Future<${queryResultFile.element.name}<TResult>>')
@@ -368,8 +403,6 @@ class MediatrCreator extends Generator {
       ..writeln('return _commands.whereType<InstanceFactory<T>>();')
       ..writeln('}')
       ..writeln('')
-      ..writeln(' int get length => _commands.length;')
-      ..writeln('')
       ..writeln(
         'Iterable<_InstanceFactoryChecker<TResult, Command>> getHandlersFor<',
       )
@@ -378,7 +411,140 @@ class MediatrCreator extends Generator {
       )
       ..writeln('')
       ..writeln('}');
-    return super.generate(library, buildStep);
+    print('complate main class');
+    return buffer.toString();
+  }
+
+  Future<AnnotatedElement?> _getCommandAnnotatedElement(
+    List<AssetId> assetIds,
+    BuildStep buildStep,
+  ) async {
+    AnnotatedElement? commandResultFile;
+    String? sourcePath;
+    for (var assetId in assetIds) {
+      try {
+        print('Scanning file: ${assetId.path}');
+        final otherLibrary = await buildStep.resolver.libraryFor(assetId);
+        final otherLibraryReader = LibraryReader(otherLibrary);
+
+        // Bu dosyada CommandResultPaternModel annotation'ı var mı?
+        final elements = otherLibraryReader.annotatedWith(
+          TypeChecker.fromRuntime(CommandResultPaternModel),
+        );
+
+        if (elements.isNotEmpty) {
+          commandResultFile = elements.first;
+          final element = commandResultFile.element;
+          final source = element.source;
+          sourcePath = source?.fullName ?? assetId.path;
+
+          print('Found CommandResultPaternModel in file: $sourcePath');
+          break; // İlk bulduğumuzda döngüden çık
+        }
+      } catch (e) {
+        print('Error analyzing file ${assetId.path}: $e');
+      }
+    }
+    return commandResultFile;
+  }
+
+  Future<AnnotatedElement?> _getQueryAnnotatedElement(
+    List<AssetId> assetIds,
+    BuildStep buildStep,
+  ) async {
+    AnnotatedElement? commandResultFile;
+    String? sourcePath;
+    for (var assetId in assetIds) {
+      try {
+        print('Scanning file: ${assetId.path}');
+        final otherLibrary = await buildStep.resolver.libraryFor(assetId);
+        final otherLibraryReader = LibraryReader(otherLibrary);
+
+        // Bu dosyada CommandResultPaternModel annotation'ı var mı?
+        final elements = otherLibraryReader.annotatedWith(
+          TypeChecker.fromRuntime(QueryResultPaternModel),
+        );
+
+        if (elements.isNotEmpty) {
+          commandResultFile = elements.first;
+          final element = commandResultFile.element;
+          final source = element.source;
+          sourcePath = source?.fullName ?? assetId.path;
+
+          print('Found CommandResultPaternModel in file: $sourcePath');
+          break; // İlk bulduğumuzda döngüden çık
+        }
+      } catch (e) {
+        print('Error analyzing file ${assetId.path}: $e');
+      }
+    }
+    return commandResultFile;
+  }
+
+  Future<AnnotatedElement?> _getQueryListAnnotatedElement(
+    List<AssetId> assetIds,
+    BuildStep buildStep,
+  ) async {
+    AnnotatedElement? commandResultFile;
+    String? sourcePath;
+    for (var assetId in assetIds) {
+      try {
+        print('Scanning file: ${assetId.path}');
+        final otherLibrary = await buildStep.resolver.libraryFor(assetId);
+        final otherLibraryReader = LibraryReader(otherLibrary);
+
+        // Bu dosyada CommandResultPaternModel annotation'ı var mı?
+        final elements = otherLibraryReader.annotatedWith(
+          TypeChecker.fromRuntime(QueryListResultPaternModel),
+        );
+
+        if (elements.isNotEmpty) {
+          commandResultFile = elements.first;
+          final element = commandResultFile.element;
+          final source = element.source;
+          sourcePath = source?.fullName ?? assetId.path;
+
+          print('Found CommandResultPaternModel in file: $sourcePath');
+          break; // İlk bulduğumuzda döngüden çık
+        }
+      } catch (e) {
+        print('Error analyzing file ${assetId.path}: $e');
+      }
+    }
+    return commandResultFile;
+  }
+
+  Future<AnnotatedElement?> _getQueryPagedListAnnotatedElement(
+    List<AssetId> assetIds,
+    BuildStep buildStep,
+  ) async {
+    AnnotatedElement? commandResultFile;
+    String? sourcePath;
+    for (var assetId in assetIds) {
+      try {
+        print('Scanning file: ${assetId.path}');
+        final otherLibrary = await buildStep.resolver.libraryFor(assetId);
+        final otherLibraryReader = LibraryReader(otherLibrary);
+
+        // Bu dosyada CommandResultPaternModel annotation'ı var mı?
+        final elements = otherLibraryReader.annotatedWith(
+          TypeChecker.fromRuntime(QueryPagedListResultPaternModel),
+        );
+
+        if (elements.isNotEmpty) {
+          commandResultFile = elements.first;
+          final element = commandResultFile.element;
+          final source = element.source;
+          sourcePath = source?.fullName ?? assetId.path;
+
+          print('Found CommandResultPaternModel in file: $sourcePath');
+          break; // İlk bulduğumuzda döngüden çık
+        }
+      } catch (e) {
+        print('Error analyzing file ${assetId.path}: $e');
+      }
+    }
+    return commandResultFile;
   }
 
   String _convertPathToImport({
@@ -416,5 +582,8 @@ class MediatrCreator extends Generator {
   }
 }
 
-Builder mediatorCreateBuilder(BuilderOptions options) =>
-    SharedPartBuilder([MediatrCreator()], 'mediatr_create');
+Builder mediatorCreateBuilder(BuilderOptions options) {
+  final extension = options.config['extension'] as String? ?? '.mediator.dart';
+
+  return LibraryBuilder(MediatrCreator(options), generatedExtension: extension);
+}

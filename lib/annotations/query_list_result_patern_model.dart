@@ -1,3 +1,3 @@
 class QueryListResultPaternModel {
-  QueryListResultPaternModel();
+  const QueryListResultPaternModel();
 }
