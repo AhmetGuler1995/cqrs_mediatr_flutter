@@ -31,10 +31,6 @@ class MediatrGenerator extends Generator {
       assetIds,
       buildStep,
     );
-    var mediatrInitFile = await _getMediatrInitAnnotatedElement(
-      assetIds,
-      buildStep,
-    );
 
     var mainPartFileImportPath = _convertPathToImport(
       uri: _getClassFullPath(mainPartFile!)!,
@@ -44,8 +40,6 @@ class MediatrGenerator extends Generator {
     final buffer = StringBuffer();
     buffer.writeln('');
     buffer.writeln('// GENERATED CODE - DO NOT MODIFY BY HAND');
-    buffer.writeln('');
-    buffer.writeln('part of \'${mediatrInitFile?.element.name}.dart\'');
     buffer.writeln('');
 
     List<AnnotatedElement?>? commandResultFile =
@@ -94,7 +88,9 @@ class MediatrGenerator extends Generator {
     final queryPagedListHandlers = <String>[];
     final imports = <String>{};
 
-    imports.add('import \'$mainPartFileImportPath\';');
+    imports.add(
+      'import \'${mainPartFileImportPath.split('.dart').first}.mediatr_create.dart\';',
+    );
 
     // TypeChecker'ları bir kez oluştur
     final commandHandlerChecker = TypeChecker.fromRuntime(
@@ -269,6 +265,7 @@ class MediatrGenerator extends Generator {
           TypeChecker.fromRuntime(CommandRegisterHandler),
         );
         commandResultFiles.addAll(elements);
+        break;
       } catch (e) {
         print('Error analyzing file ${assetId.path}: $e');
       }
