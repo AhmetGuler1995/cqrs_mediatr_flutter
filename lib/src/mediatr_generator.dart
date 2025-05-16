@@ -17,14 +17,12 @@ class MediatrGenerator extends Generator {
     if (!library
         .annotatedWith(TypeChecker.fromRuntime(MainMediatrFile))
         .isNotEmpty) {
-      log.severe('@MainMediatrFile Annotation Not FOUND !!!!');
       return null; // MainMediatrFile ile işaretlenmiş değilse atla
     }
 
     if (!library
         .annotatedWith(TypeChecker.fromRuntime(MediatrInit))
         .isNotEmpty) {
-      log.severe('@MediatrInit Annotation Not FOUND !!!!');
       return null; // MediatrInit ile işaretlenmiş değilse atla
     }
     final assetIds = await buildStep.findAssets(Glob('lib/**/*.dart')).toList();
