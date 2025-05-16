@@ -583,7 +583,8 @@ class MediatrCreator extends Generator {
 }
 
 Builder mediatorCreateBuilder(BuilderOptions options) {
-  final extension = options.config['extension'] as String? ?? '.mediator.dart';
+  final extension =
+      options.config['extension'] as String? ?? '.mediatr_create.dart';
 
   return LibraryBuilder(MediatrCreator(options), generatedExtension: extension);
 }
