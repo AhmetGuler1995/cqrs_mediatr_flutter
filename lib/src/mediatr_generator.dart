@@ -31,6 +31,10 @@ class MediatrGenerator extends Generator {
       assetIds,
       buildStep,
     );
+    var mediatrInitFile = await _getMediatrInitAnnotatedElement(
+      assetIds,
+      buildStep,
+    );
 
     var mainPartFileImportPath = _convertPathToImport(
       uri: _getClassFullPath(mainPartFile!)!,
@@ -40,6 +44,8 @@ class MediatrGenerator extends Generator {
     final buffer = StringBuffer();
     buffer.writeln('');
     buffer.writeln('// GENERATED CODE - DO NOT MODIFY BY HAND');
+    buffer.writeln('');
+    buffer.writeln('part of \'${mediatrInitFile?.element.name}.dart\'');
     buffer.writeln('');
 
     List<AnnotatedElement?>? commandResultFile =
@@ -308,6 +314,39 @@ class MediatrGenerator extends Generator {
         // Bu dosyada CommandResultPaternModel annotation'ı var mı?
         final elements = otherLibraryReader.annotatedWith(
           TypeChecker.fromRuntime(MainMediatrFile),
+        );
+
+        if (elements.isNotEmpty) {
+          commandResultFile = elements.first;
+          final element = commandResultFile.element;
+          final source = element.source;
+          sourcePath = source?.fullName ?? assetId.path;
+
+          print('Found CommandResultPaternModel in file: $sourcePath');
+          break; // İlk bulduğumuzda döngüden çık
+        }
+      } catch (e) {
+        print('Error analyzing file ${assetId.path}: $e');
+      }
+    }
+    return commandResultFile;
+  }
+
+  Future<AnnotatedElement?> _getMediatrInitAnnotatedElement(
+    List<AssetId> assetIds,
+    BuildStep buildStep,
+  ) async {
+    AnnotatedElement? commandResultFile;
+    String? sourcePath;
+    for (var assetId in assetIds) {
+      try {
+        print('Scanning file: ${assetId.path}');
+        final otherLibrary = await buildStep.resolver.libraryFor(assetId);
+        final otherLibraryReader = LibraryReader(otherLibrary);
+
+        // Bu dosyada CommandResultPaternModel annotation'ı var mı?
+        final elements = otherLibraryReader.annotatedWith(
+          TypeChecker.fromRuntime(MediatrInit),
         );
 
         if (elements.isNotEmpty) {
