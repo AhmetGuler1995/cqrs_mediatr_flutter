@@ -328,39 +328,6 @@ class MediatrGenerator extends Generator {
     }
     return commandResultFile;
   }
-
-  Future<AnnotatedElement?> _getMediatrInitAnnotatedElement(
-    List<AssetId> assetIds,
-    BuildStep buildStep,
-  ) async {
-    AnnotatedElement? commandResultFile;
-    String? sourcePath;
-    for (var assetId in assetIds) {
-      try {
-        print('Scanning file: ${assetId.path}');
-        final otherLibrary = await buildStep.resolver.libraryFor(assetId);
-        final otherLibraryReader = LibraryReader(otherLibrary);
-
-        // Bu dosyada CommandResultPaternModel annotation'ı var mı?
-        final elements = otherLibraryReader.annotatedWith(
-          TypeChecker.fromRuntime(MediatrInit),
-        );
-
-        if (elements.isNotEmpty) {
-          commandResultFile = elements.first;
-          final element = commandResultFile.element;
-          final source = element.source;
-          sourcePath = source?.fullName ?? assetId.path;
-
-          print('Found CommandResultPaternModel in file: $sourcePath');
-          break; // İlk bulduğumuzda döngüden çık
-        }
-      } catch (e) {
-        print('Error analyzing file ${assetId.path}: $e');
-      }
-    }
-    return commandResultFile;
-  }
 }
 
 Builder mediatorInitBuilder(BuilderOptions options) {
