@@ -12,35 +12,83 @@ class MediatrGenerator extends Generator {
 
   // Constructor'da options'ı alıyoruz
   MediatrGenerator(this.options);
+
   @override
   Future<String?> generate(LibraryReader library, BuildStep buildStep) async {
-    var mainPartFile =
-        library
-            .annotatedWith(TypeChecker.fromRuntime(MainMediatrFile))
-            .firstOrNull;
-    if (mainPartFile == null) {
+    if (!library
+        .annotatedWith(TypeChecker.fromRuntime(MainMediatrFile))
+        .isNotEmpty) {
       return null; // MainMediatrFile ile işaretlenmiş değilse atla
     }
 
-    var mainPartFileImportPath = _convertPathToImport(
-      uri: _getClassFullPath(mainPartFile)!,
-      buildStep: buildStep,
-    );
-
-    // Sadece MediatrInit annotasyonu olan kütüphaneleri işle
     if (!library
         .annotatedWith(TypeChecker.fromRuntime(MediatrInit))
         .isNotEmpty) {
       return null; // MediatrInit ile işaretlenmiş değilse atla
     }
+    final assetIds = await buildStep.findAssets(Glob('lib/**/*.dart')).toList();
+
+    var mainPartFile = await _getMainFileMediatrAnnotatedElement(
+      assetIds,
+      buildStep,
+    );
+
+    var mainPartFileImportPath = _convertPathToImport(
+      uri: _getClassFullPath(mainPartFile!)!,
+      buildStep: buildStep,
+    );
 
     final buffer = StringBuffer();
-
+    buffer.writeln('');
     buffer.writeln('// GENERATED CODE - DO NOT MODIFY BY HAND');
+    buffer.writeln('');
 
+    List<AnnotatedElement?>? commandResultFile =
+        await _getCommandRegisterAnnotatedElements(assetIds, buildStep);
+
+    if (commandResultFile?.isNotEmpty ?? false) {
+      List<String> importsCommand = <String>[];
+      for (var element in commandResultFile ?? <AnnotatedElement>[]) {
+        if (element == null) {
+          continue;
+        }
+        var commandImportPath = _convertPathToImport(
+          uri: _getClassFullPath(element)!,
+          buildStep: buildStep,
+        );
+        importsCommand.add('import \'$commandImportPath\';');
+      }
+
+      buffer.writeln('// Command Handlers Referances');
+      importsCommand.forEach(buffer.writeln);
+    }
+
+    List<AnnotatedElement?>? queryResultFile =
+        await _getQueryRegisterAnnotatedElements(assetIds, buildStep);
+
+    if (queryResultFile?.isNotEmpty ?? false) {
+      List<String> importsQuery = <String>[];
+      for (var element in commandResultFile ?? <AnnotatedElement>[]) {
+        if (element == null) {
+          continue;
+        }
+        var commandImportPath = _convertPathToImport(
+          uri: _getClassFullPath(element)!,
+          buildStep: buildStep,
+        );
+        importsQuery.add('import \'$commandImportPath\';');
+      }
+
+      buffer.writeln('// Query Handlers Referances');
+
+      importsQuery.forEach(buffer.writeln);
+    }
     final commandHandlers = <String>[];
     final queryHandlers = <String>[];
+    final queryListHandlers = <String>[];
+    final queryPagedListHandlers = <String>[];
     final imports = <String>{};
+
     imports.add('import \'$mainPartFileImportPath\';');
 
     // TypeChecker'ları bir kez oluştur
@@ -56,7 +104,6 @@ class MediatrGenerator extends Generator {
       final sourceText = await buildStep.readAsString(input);
 
       if (sourceText.contains('part of ') || sourceText.contains('part of;')) {
-        print('Skipping ${input.uri} because it appears to be a part file.');
         continue;
       }
 
@@ -88,7 +135,9 @@ class MediatrGenerator extends Generator {
             imports.add('import \'$importPath\';');
 
             if (sourceText.contains('IQueryPagedListHandler')) {
+              queryPagedListHandlers.add(className);
             } else if (sourceText.contains('IQueryListHandler')) {
+              queryListHandlers.add(className);
             } else {
               queryHandlers.add(className);
             }
@@ -110,7 +159,10 @@ class MediatrGenerator extends Generator {
       }
     }
 
-    if (commandHandlers.isEmpty && queryHandlers.isEmpty) {
+    if (commandHandlers.isEmpty &&
+        queryHandlers.isEmpty &&
+        queryPagedListHandlers.isEmpty &&
+        queryListHandlers.isEmpty) {
       print('No annotated handlers found in any files.');
       return ''; // Boş dosya oluşturma, hiçbir handler bulunamadı
     }
@@ -119,26 +171,44 @@ class MediatrGenerator extends Generator {
     imports.forEach(buffer.writeln);
     buffer.writeln();
 
-    buffer.write('final Mediator mediator = Mediator(); \n\n');
-
     // registerCommandHandlers fonksiyonunu oluştur
     buffer.writeln('void registerCommandHandlers() {');
     for (var handler in commandHandlers) {
-      buffer.writeln('\tmediator.registerCommandHandler($handler());');
+      buffer.writeln(
+        '\tMediatR.instance.registerCommandHandler(() => ${handler}());',
+      );
     }
     buffer.writeln('} \n');
 
     // registerQueryHandlers fonksiyonunu oluştur
     buffer.writeln('void registerQueryHandlers() {');
     for (var handler in queryHandlers) {
-      buffer.writeln('\tmediator.registerQueryHandler($handler());');
+      buffer.writeln(
+        '\tMediatR.instance.registerQueryHandler(() => ${handler}());',
+      );
     }
     buffer.writeln('} \n');
 
+    buffer.writeln('void registerQueryListHandlers() {');
+    for (var handler in queryListHandlers) {
+      buffer.writeln(
+        '\tMediatR.instance.registerQueryListHandler(() => ${handler}());',
+      );
+    }
+    buffer.writeln('} \n');
+    buffer.writeln('void registerQueryPagedListHandlers() {');
+    for (var handler in queryListHandlers) {
+      buffer.writeln(
+        '\tMediatR.instance.registerQueryPagedListHandler(() => ${handler}());',
+      );
+    }
+    buffer.writeln('} \n');
     // registerAllHandlers fonksiyonunu oluştur
     buffer.writeln('void registerAllHandlers() {');
     buffer.writeln('\tregisterCommandHandlers();');
     buffer.writeln('\tregisterQueryHandlers();');
+    buffer.writeln('\tregisterQueryListHandlers();');
+    buffer.writeln('\tregisterQueryPagedListHandlers();');
     buffer.writeln('} \n');
 
     return buffer.toString();
@@ -176,6 +246,85 @@ class MediatrGenerator extends Generator {
   Uri? _getClassFullPath(AnnotatedElement annotatedElement) {
     final element = annotatedElement.element;
     return element.source?.uri;
+  }
+
+  Future<List<AnnotatedElement?>?> _getCommandRegisterAnnotatedElements(
+    List<AssetId> assetIds,
+    BuildStep buildStep,
+  ) async {
+    List<AnnotatedElement?> commandResultFiles = <AnnotatedElement?>[];
+    for (var assetId in assetIds) {
+      try {
+        print('Scanning file: ${assetId.path}');
+        final otherLibrary = await buildStep.resolver.libraryFor(assetId);
+        final otherLibraryReader = LibraryReader(otherLibrary);
+
+        // Bu dosyada CommandResultPaternModel annotation'ı var mı?
+        final elements = otherLibraryReader.annotatedWith(
+          TypeChecker.fromRuntime(CommandRegisterHandler),
+        );
+        commandResultFiles.addAll(elements);
+      } catch (e) {
+        print('Error analyzing file ${assetId.path}: $e');
+      }
+    }
+    return commandResultFiles;
+  }
+
+  Future<List<AnnotatedElement?>?> _getQueryRegisterAnnotatedElements(
+    List<AssetId> assetIds,
+    BuildStep buildStep,
+  ) async {
+    List<AnnotatedElement?> commandResultFiles = <AnnotatedElement?>[];
+    for (var assetId in assetIds) {
+      try {
+        print('Scanning file: ${assetId.path}');
+        final otherLibrary = await buildStep.resolver.libraryFor(assetId);
+        final otherLibraryReader = LibraryReader(otherLibrary);
+
+        final elements = otherLibraryReader.annotatedWith(
+          TypeChecker.fromRuntime(QueryRegisterHandler),
+        );
+
+        commandResultFiles.addAll(elements);
+      } catch (e) {
+        print('Error analyzing file ${assetId.path}: $e');
+      }
+    }
+    return commandResultFiles;
+  }
+
+  Future<AnnotatedElement?> _getMainFileMediatrAnnotatedElement(
+    List<AssetId> assetIds,
+    BuildStep buildStep,
+  ) async {
+    AnnotatedElement? commandResultFile;
+    String? sourcePath;
+    for (var assetId in assetIds) {
+      try {
+        print('Scanning file: ${assetId.path}');
+        final otherLibrary = await buildStep.resolver.libraryFor(assetId);
+        final otherLibraryReader = LibraryReader(otherLibrary);
+
+        // Bu dosyada CommandResultPaternModel annotation'ı var mı?
+        final elements = otherLibraryReader.annotatedWith(
+          TypeChecker.fromRuntime(MainMediatrFile),
+        );
+
+        if (elements.isNotEmpty) {
+          commandResultFile = elements.first;
+          final element = commandResultFile.element;
+          final source = element.source;
+          sourcePath = source?.fullName ?? assetId.path;
+
+          print('Found CommandResultPaternModel in file: $sourcePath');
+          break; // İlk bulduğumuzda döngüden çık
+        }
+      } catch (e) {
+        print('Error analyzing file ${assetId.path}: $e');
+      }
+    }
+    return commandResultFile;
   }
 }
 
