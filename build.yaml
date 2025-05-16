@@ -5,24 +5,30 @@ targets:
         enabled: true
         generate_for:
           - lib/**.dart
+        options:
+          output_dir: "lib/generated/mediatr_create"
+
       cqrs_mediatr_flutter:mediatr_init:
-        enabled: false
+        enabled: true
         generate_for:
           - lib/**.dart
+        options:
+          output_dir: "lib/generated/mediatr_init"
+
    
 
 builders:
   mediatr_create:
     import: "package:cqrs_mediatr_flutter/src/mediatr_creator.dart"
     builder_factories: ["mediatorCreateBuilder"]
-    build_extensions: {".dart": [".mediatr.dart"]}
+    build_extensions: {".dart": [".mediatr_create.dart"]}
     auto_apply: dependents
     build_to: source
     applies_builders: ["source_gen|combining_builder"]
   mediatr_init:
     import: "package:cqrs_mediatr_flutter/src/mediatr_generator.dart"
     builder_factories: ["mediatorInitBuilder"]
-    build_extensions: {".dart": [".g.dart"]}
+    build_extensions: {".dart": [".mediatr_init.dart"]}
     auto_apply: dependents
     build_to: source
     applies_builders: ["source_gen|combining_builder"]
