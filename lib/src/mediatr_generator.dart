@@ -10,7 +10,6 @@ import 'package:path/path.dart' as path;
 class MediatrGenerator extends Generator {
   final BuilderOptions options;
 
-  // Constructor'da options'ı alıyoruz
   MediatrGenerator(this.options);
 
   @override
@@ -328,5 +327,10 @@ class MediatrGenerator extends Generator {
   }
 }
 
-Builder mediatorInitBuilder(BuilderOptions options) =>
-    SharedPartBuilder([MediatrGenerator(options)], 'mediatr_init');
+Builder mediatorInitBuilder(BuilderOptions options) {
+  final extension = options.config['extension'] as String? ?? '.mediator.dart';
+  return LibraryBuilder(
+    MediatrGenerator(options),
+    generatedExtension: extension,
+  );
+}
