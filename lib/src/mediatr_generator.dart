@@ -142,12 +142,6 @@ class MediatrGenerator extends Generator {
 
           hasAnnotations = hasAnnotations || isRelevantAnnotation;
         }
-
-        if (!hasAnnotations) {
-          log.severe(
-            '@CommandRegisterHandler OR @QueryRegisterHandler Annotation Not Founded.',
-          );
-        }
       } catch (e) {
         log.severe(
           'Skipping ${input.uri} as it could not be resolved as a Dart library: $e',
@@ -161,7 +155,7 @@ class MediatrGenerator extends Generator {
         queryPagedListHandlers.isEmpty &&
         queryListHandlers.isEmpty) {
       log.severe('No annotated handlers found in any files.');
-      return ''; // Boş dosya oluşturma, hiçbir handler bulunamadı
+      return '';
     }
 
     // Import ifadelerini ekle
