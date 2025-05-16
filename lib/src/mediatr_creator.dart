@@ -41,7 +41,7 @@ class MediatrCreator extends Generator {
     if (commandResultFile == null) {
       return null; // CommandResultPaternModel ile işaretlenmiş değilse atla
     }
-    print('Command Result File Name: ${commandResultFile.element.name}');
+    log.info('Command Result File Name: ${commandResultFile.element.name}');
 
     AnnotatedElement? queryListResultFile = await _getQueryListAnnotatedElement(
       assetIds,
@@ -52,14 +52,16 @@ class MediatrCreator extends Generator {
       return null; // QueryListResultPaternModel ile işaretlenmiş değilse atla
     }
 
-    print('Query List Result File Name: ${queryListResultFile.element.name}');
+    log.info(
+      'Query List Result File Name: ${queryListResultFile.element.name}',
+    );
 
     var queryResultFile = await _getQueryAnnotatedElement(assetIds, buildStep);
 
     if (queryResultFile == null) {
       return null;
     }
-    print('Query Result File Name: ${queryResultFile.element.name}');
+    log.info('Query Result File Name: ${queryResultFile.element.name}');
     var queryPagedResultFile = await _getQueryPagedListAnnotatedElement(
       assetIds,
       buildStep,
@@ -70,7 +72,7 @@ class MediatrCreator extends Generator {
     }
     List<String> imports = <String>[];
 
-    print('Query Paged Result File Name: ${queryResultFile.element.name}');
+    log.info('Query Paged Result File Name: ${queryResultFile.element.name}');
 
     var commandResultFileImportPath = _convertPathToImport(
       uri: _getClassFullPath(commandResultFile)!,
@@ -79,7 +81,8 @@ class MediatrCreator extends Generator {
     if (!imports.any((e) => e == 'import \'$commandResultFileImportPath\';')) {
       imports.add('import \'$commandResultFileImportPath\';');
     }
-    print('Command Result Import Content: $commandResultFileImportPath');
+
+    log.info('Command Result Import Content: $commandResultFileImportPath');
 
     var queryResultFileImportPath = _convertPathToImport(
       uri: _getClassFullPath(queryResultFile)!,
@@ -88,7 +91,8 @@ class MediatrCreator extends Generator {
     if (!imports.any((e) => e == 'import \'$queryResultFileImportPath\';')) {
       imports.add('import \'$queryResultFileImportPath\';');
     }
-    print('Query Result Import Content: $queryResultFileImportPath');
+
+    log.info('Query Result Import Content: $queryResultFileImportPath');
 
     var queryListResultFileImportPath = _convertPathToImport(
       uri: _getClassFullPath(queryListResultFile)!,
@@ -101,7 +105,9 @@ class MediatrCreator extends Generator {
       imports.add('import \'$queryListResultFileImportPath\';');
     }
 
-    print('Query List Result Import Content: $queryListResultFileImportPath');
+    log.info(
+      'Query List Result Import Content: $queryListResultFileImportPath',
+    );
 
     var queryPagedListResultFileImportPath = _convertPathToImport(
       uri: _getClassFullPath(queryPagedResultFile)!,
@@ -112,7 +118,7 @@ class MediatrCreator extends Generator {
     )) {
       imports.add('import \'$queryPagedListResultFileImportPath\';');
     }
-    print(
+    log.info(
       'Query Paged List Result Import Content: $queryPagedListResultFileImportPath',
     );
 
@@ -411,7 +417,7 @@ class MediatrCreator extends Generator {
       )
       ..writeln('')
       ..writeln('}');
-    print('complate main class');
+    log.info('complate main class');
     return buffer.toString();
   }
 
@@ -423,7 +429,6 @@ class MediatrCreator extends Generator {
     String? sourcePath;
     for (var assetId in assetIds) {
       try {
-        print('Scanning file: ${assetId.path}');
         final otherLibrary = await buildStep.resolver.libraryFor(assetId);
         final otherLibraryReader = LibraryReader(otherLibrary);
 
@@ -438,11 +443,11 @@ class MediatrCreator extends Generator {
           final source = element.source;
           sourcePath = source?.fullName ?? assetId.path;
 
-          print('Found CommandResultPaternModel in file: $sourcePath');
+          log.info('Found CommandResultPaternModel in file: $sourcePath');
           break; // İlk bulduğumuzda döngüden çık
         }
       } catch (e) {
-        print('Error analyzing file ${assetId.path}: $e');
+        log.severe('Error analyzing file ${assetId.path}: $e');
       }
     }
     return commandResultFile;
@@ -456,7 +461,6 @@ class MediatrCreator extends Generator {
     String? sourcePath;
     for (var assetId in assetIds) {
       try {
-        print('Scanning file: ${assetId.path}');
         final otherLibrary = await buildStep.resolver.libraryFor(assetId);
         final otherLibraryReader = LibraryReader(otherLibrary);
 
@@ -471,11 +475,11 @@ class MediatrCreator extends Generator {
           final source = element.source;
           sourcePath = source?.fullName ?? assetId.path;
 
-          print('Found CommandResultPaternModel in file: $sourcePath');
+          log.info('Found CommandResultPaternModel in file: $sourcePath');
           break; // İlk bulduğumuzda döngüden çık
         }
       } catch (e) {
-        print('Error analyzing file ${assetId.path}: $e');
+        log.severe('Error analyzing file ${assetId.path}: $e');
       }
     }
     return commandResultFile;
@@ -489,7 +493,6 @@ class MediatrCreator extends Generator {
     String? sourcePath;
     for (var assetId in assetIds) {
       try {
-        print('Scanning file: ${assetId.path}');
         final otherLibrary = await buildStep.resolver.libraryFor(assetId);
         final otherLibraryReader = LibraryReader(otherLibrary);
 
@@ -504,11 +507,11 @@ class MediatrCreator extends Generator {
           final source = element.source;
           sourcePath = source?.fullName ?? assetId.path;
 
-          print('Found CommandResultPaternModel in file: $sourcePath');
+          log.info('Found CommandResultPaternModel in file: $sourcePath');
           break; // İlk bulduğumuzda döngüden çık
         }
       } catch (e) {
-        print('Error analyzing file ${assetId.path}: $e');
+        log.severe('Error analyzing file ${assetId.path}: $e');
       }
     }
     return commandResultFile;
@@ -522,7 +525,6 @@ class MediatrCreator extends Generator {
     String? sourcePath;
     for (var assetId in assetIds) {
       try {
-        print('Scanning file: ${assetId.path}');
         final otherLibrary = await buildStep.resolver.libraryFor(assetId);
         final otherLibraryReader = LibraryReader(otherLibrary);
 
@@ -537,11 +539,11 @@ class MediatrCreator extends Generator {
           final source = element.source;
           sourcePath = source?.fullName ?? assetId.path;
 
-          print('Found CommandResultPaternModel in file: $sourcePath');
+          log.info('Found CommandResultPaternModel in file: $sourcePath');
           break; // İlk bulduğumuzda döngüden çık
         }
       } catch (e) {
-        print('Error analyzing file ${assetId.path}: $e');
+        log.severe('Error analyzing file ${assetId.path}: $e');
       }
     }
     return commandResultFile;

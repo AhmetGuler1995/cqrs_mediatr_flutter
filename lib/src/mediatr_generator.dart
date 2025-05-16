@@ -17,12 +17,14 @@ class MediatrGenerator extends Generator {
     if (!library
         .annotatedWith(TypeChecker.fromRuntime(MainMediatrFile))
         .isNotEmpty) {
+      log.severe('@MainMediatrFile Annotation Not FOUND !!!!');
       return null; // MainMediatrFile ile işaretlenmiş değilse atla
     }
 
     if (!library
         .annotatedWith(TypeChecker.fromRuntime(MediatrInit))
         .isNotEmpty) {
+      log.severe('@MediatrInit Annotation Not FOUND !!!!');
       return null; // MediatrInit ile işaretlenmiş değilse atla
     }
     final assetIds = await buildStep.findAssets(Glob('lib/**/*.dart')).toList();
@@ -99,9 +101,6 @@ class MediatrGenerator extends Generator {
     final queryHandlerChecker = TypeChecker.fromRuntime(QueryRegisterHandler);
 
     await for (var input in buildStep.findAssets(Glob('lib/**/*.dart'))) {
-      print('Scanning file: ${input.uri}');
-
-      // Part veya part-of dosyalarını atlamak için içeriği oku
       final sourceText = await buildStep.readAsString(input);
 
       if (sourceText.contains('part of ') || sourceText.contains('part of;')) {
@@ -111,7 +110,6 @@ class MediatrGenerator extends Generator {
       try {
         final resolvedLibrary = await buildStep.resolver.libraryFor(input);
         final libraryReader = LibraryReader(resolvedLibrary);
-        print('Resolved library for: ${input.uri}');
 
         bool hasAnnotations = false;
 
@@ -125,14 +123,12 @@ class MediatrGenerator extends Generator {
           // CommandHandler annotasyonu var mı?
           if (commandHandlerChecker.hasAnnotationOf(classElement)) {
             isRelevantAnnotation = true;
-            print('Found CommandHandler: $className in $importPath');
             commandHandlers.add(className);
             imports.add('import \'$importPath\';');
           }
           // QueryHandler annotasyonu var mı?
           else if (queryHandlerChecker.hasAnnotationOf(classElement)) {
             isRelevantAnnotation = true;
-            print('Found QueryHandler: $className in $importPath');
             imports.add('import \'$importPath\';');
 
             if (sourceText.contains('IQueryPagedListHandler')) {
@@ -148,12 +144,12 @@ class MediatrGenerator extends Generator {
         }
 
         if (!hasAnnotations) {
-          print(
-            'No relevant annotated classes found in ${input.uri}, skipping file.',
+          log.severe(
+            '@CommandRegisterHandler OR @QueryRegisterHandler Annotation Not Founded.',
           );
         }
       } catch (e) {
-        print(
+        log.severe(
           'Skipping ${input.uri} as it could not be resolved as a Dart library: $e',
         );
         continue;
@@ -164,7 +160,7 @@ class MediatrGenerator extends Generator {
         queryHandlers.isEmpty &&
         queryPagedListHandlers.isEmpty &&
         queryListHandlers.isEmpty) {
-      print('No annotated handlers found in any files.');
+      log.severe('No annotated handlers found in any files.');
       return ''; // Boş dosya oluşturma, hiçbir handler bulunamadı
     }
 
@@ -198,7 +194,7 @@ class MediatrGenerator extends Generator {
     }
     buffer.writeln('} \n');
     buffer.writeln('void registerQueryPagedListHandlers() {');
-    for (var handler in queryListHandlers) {
+    for (var handler in queryPagedListHandlers) {
       buffer.writeln(
         '\tMediatR.instance.registerQueryPagedListHandler(() => ${handler}());',
       );
@@ -256,7 +252,6 @@ class MediatrGenerator extends Generator {
     List<AnnotatedElement?> commandResultFiles = <AnnotatedElement?>[];
     for (var assetId in assetIds) {
       try {
-        print('Scanning file: ${assetId.path}');
         final otherLibrary = await buildStep.resolver.libraryFor(assetId);
         final otherLibraryReader = LibraryReader(otherLibrary);
 
@@ -267,7 +262,7 @@ class MediatrGenerator extends Generator {
         commandResultFiles.addAll(elements);
         break;
       } catch (e) {
-        print('Error analyzing file ${assetId.path}: $e');
+        log.severe('!!! Analyze Error ${assetId.path}: $e !!!');
       }
     }
     return commandResultFiles;
@@ -280,7 +275,6 @@ class MediatrGenerator extends Generator {
     List<AnnotatedElement?> commandResultFiles = <AnnotatedElement?>[];
     for (var assetId in assetIds) {
       try {
-        print('Scanning file: ${assetId.path}');
         final otherLibrary = await buildStep.resolver.libraryFor(assetId);
         final otherLibraryReader = LibraryReader(otherLibrary);
 
@@ -290,7 +284,7 @@ class MediatrGenerator extends Generator {
 
         commandResultFiles.addAll(elements);
       } catch (e) {
-        print('Error analyzing file ${assetId.path}: $e');
+        log.severe('!!! Analyze Error ${assetId.path}: $e !!!');
       }
     }
     return commandResultFiles;
@@ -301,10 +295,8 @@ class MediatrGenerator extends Generator {
     BuildStep buildStep,
   ) async {
     AnnotatedElement? commandResultFile;
-    String? sourcePath;
     for (var assetId in assetIds) {
       try {
-        print('Scanning file: ${assetId.path}');
         final otherLibrary = await buildStep.resolver.libraryFor(assetId);
         final otherLibraryReader = LibraryReader(otherLibrary);
 
@@ -315,15 +307,10 @@ class MediatrGenerator extends Generator {
 
         if (elements.isNotEmpty) {
           commandResultFile = elements.first;
-          final element = commandResultFile.element;
-          final source = element.source;
-          sourcePath = source?.fullName ?? assetId.path;
-
-          print('Found CommandResultPaternModel in file: $sourcePath');
           break; // İlk bulduğumuzda döngüden çık
         }
       } catch (e) {
-        print('Error analyzing file ${assetId.path}: $e');
+        log.severe('!!! Analyze Error ${assetId.path}: $e !!!');
       }
     }
     return commandResultFile;
