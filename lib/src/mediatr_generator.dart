@@ -243,6 +243,11 @@ class MediatrGenerator extends Generator {
   ) async {
     List<AnnotatedElement?> commandResultFiles = <AnnotatedElement?>[];
     for (var assetId in assetIds) {
+      final sourceText = await buildStep.readAsString(assetId);
+
+      if (sourceText.contains('part of ') || sourceText.contains('part of;')) {
+        continue;
+      }
       try {
         final otherLibrary = await buildStep.resolver.libraryFor(assetId);
         final otherLibraryReader = LibraryReader(otherLibrary);
@@ -254,7 +259,7 @@ class MediatrGenerator extends Generator {
         commandResultFiles.addAll(elements);
         break;
       } catch (e) {
-        log.severe('!!! Analyze Error ${assetId.path}: $e !!!');
+        continue;
       }
     }
     return commandResultFiles;
@@ -267,6 +272,12 @@ class MediatrGenerator extends Generator {
     List<AnnotatedElement?> commandResultFiles = <AnnotatedElement?>[];
     for (var assetId in assetIds) {
       try {
+        final sourceText = await buildStep.readAsString(assetId);
+
+        if (sourceText.contains('part of ') ||
+            sourceText.contains('part of;')) {
+          continue;
+        }
         final otherLibrary = await buildStep.resolver.libraryFor(assetId);
         final otherLibraryReader = LibraryReader(otherLibrary);
 
@@ -276,7 +287,7 @@ class MediatrGenerator extends Generator {
 
         commandResultFiles.addAll(elements);
       } catch (e) {
-        log.severe('!!! Analyze Error ${assetId.path}: $e !!!');
+        continue;
       }
     }
     return commandResultFiles;
@@ -289,6 +300,12 @@ class MediatrGenerator extends Generator {
     AnnotatedElement? commandResultFile;
     for (var assetId in assetIds) {
       try {
+        final sourceText = await buildStep.readAsString(assetId);
+
+        if (sourceText.contains('part of ') ||
+            sourceText.contains('part of;')) {
+          continue;
+        }
         final otherLibrary = await buildStep.resolver.libraryFor(assetId);
         final otherLibraryReader = LibraryReader(otherLibrary);
 
