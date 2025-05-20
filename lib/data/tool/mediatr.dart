@@ -1,6 +1,6 @@
 // Generated code - do not modify
 // CQRS MediatR implementation for Flutter
-// Generated on: 2025-05-20 16:27:22.519314
+// Generated on: 2025-05-20 16:38:47.514020
 
 import 'dart:async';
 import 'package:cqrs_mediatr_flutter/example/generic_result/result.dart';

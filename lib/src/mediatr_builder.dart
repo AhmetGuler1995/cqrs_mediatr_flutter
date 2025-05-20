@@ -482,7 +482,7 @@ class MediatRBuilder implements Builder {
   const MediatRBuilder(this.options);
   @override
   Map<String, List<String>> get buildExtensions => {
-    '.dart': ['.g.dart'],
+    '.dart': ['.mediatr.dart'],
   };
 
   @override
