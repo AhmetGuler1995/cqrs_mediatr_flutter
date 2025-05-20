@@ -494,10 +494,8 @@ class MediatRBuilder implements Builder {
   Future<void> mediatrMainGenerator(BuildStep buildStep) async {
     var optionExportPath =
         options.config.isNotEmpty ? options.config['generate_path'] : null;
-    final outputPath =
-        optionExportPath == null
-            ? path.join('lib', 'generated', 'mediatr.dart')
-            : path.join('lib', optionExportPath, 'mediatr.dart');
+    if (optionExportPath == null) return;
+    final outputPath = path.join('lib', optionExportPath, 'mediatr.dart');
 
     final generator = MediatRGenerator(options);
     final library = LibraryReader(await buildStep.inputLibrary);
@@ -514,10 +512,15 @@ class MediatRBuilder implements Builder {
   Future<void> mediatrRegisterGenerator(BuildStep buildStep) async {
     var optionExportPath =
         options.config.isNotEmpty ? options.config['generate_path'] : null;
+
+    if (optionExportPath == null) return;
+
     final outputPath =
-        optionExportPath == null
-            ? path.join('lib', 'generated', 'mediatr_register.dart')
-            : path.join('lib', optionExportPath, 'mediatr_register.dart');
+        optionExportPath = path.join(
+          'lib',
+          optionExportPath,
+          'mediatr_register.dart',
+        );
 
     final generator = MediatrRegisterGenerator(options);
     final library = LibraryReader(await buildStep.inputLibrary);

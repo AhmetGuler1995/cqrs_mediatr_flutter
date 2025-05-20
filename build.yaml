@@ -4,7 +4,7 @@ targets:
       cqrs_mediatr_flutter:mediatr_builder:
         enabled: true
         options: 
-          generate_path: 'data/tool'
+          generate_path: null
 
 builders:
   mediatr_builder:
