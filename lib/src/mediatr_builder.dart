@@ -187,7 +187,7 @@ class MediatRGenerator extends Generator {
 
         // Bu dosyada CommandResultPaternModel annotation'ı var mı?
         final elements = otherLibraryReader.annotatedWith(
-          TypeChecker.fromRuntime(CommandResultPaternModel),
+          TypeChecker.fromRuntime(annotation),
         );
         if (elements.isEmpty) continue;
         return elements.first;
