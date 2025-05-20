@@ -1,3 +1,0 @@
-class RegisterHandler {
-  const RegisterHandler();
-}

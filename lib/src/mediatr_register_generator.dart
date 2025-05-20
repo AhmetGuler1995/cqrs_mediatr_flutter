@@ -1,47 +1,21 @@
 import 'package:build/build.dart';
 import 'package:cqrs_mediatr_flutter/annotations/command_register_handler.dart';
-import 'package:cqrs_mediatr_flutter/annotations/main_mediatr_file.dart';
-import 'package:cqrs_mediatr_flutter/annotations/mediatr_init.dart';
 import 'package:cqrs_mediatr_flutter/annotations/query_register_handler.dart';
 import 'package:glob/glob.dart';
 import 'package:source_gen/source_gen.dart';
 import 'package:path/path.dart' as path;
 
-class MediatrGenerator extends Generator {
+class MediatrRegisterGenerator extends Generator {
   final BuilderOptions options;
-
-  MediatrGenerator(this.options);
+  MediatrRegisterGenerator(this.options);
 
   @override
-  Future<String?> generate(LibraryReader library, BuildStep buildStep) async {
-    if (!library
-        .annotatedWith(TypeChecker.fromRuntime(MainMediatrFile))
-        .isNotEmpty) {
-      return null; // MainMediatrFile ile işaretlenmiş değilse atla
-    }
-
-    if (!library
-        .annotatedWith(TypeChecker.fromRuntime(MediatrInit))
-        .isNotEmpty) {
-      return null; // MediatrInit ile işaretlenmiş değilse atla
-    }
+  Future<String> generate(LibraryReader library, BuildStep buildStep) async {
     final assetIds = await buildStep.findAssets(Glob('lib/**/*.dart')).toList();
-
-    var mainPartFile = await _getMainFileMediatrAnnotatedElement(
-      assetIds,
-      buildStep,
-    );
-
-    var mainPartFileImportPath = _convertPathToImport(
-      uri: _getClassFullPath(mainPartFile!)!,
-      buildStep: buildStep,
-    );
-
     final buffer = StringBuffer();
     buffer.writeln('');
     buffer.writeln('// GENERATED CODE - DO NOT MODIFY BY HAND');
     buffer.writeln('');
-
     List<AnnotatedElement?>? commandResultFile =
         await _getCommandRegisterAnnotatedElements(assetIds, buildStep);
 
@@ -82,15 +56,21 @@ class MediatrGenerator extends Generator {
 
       importsQuery.forEach(buffer.writeln);
     }
+
     final commandHandlers = <String>[];
     final queryHandlers = <String>[];
     final queryListHandlers = <String>[];
     final queryPagedListHandlers = <String>[];
     final imports = <String>{};
-
-    imports.add(
-      'import \'${mainPartFileImportPath.split('.dart').first}.mediatr_create.dart\';',
-    );
+    final uri = library.element.source.uri;
+    final packageName = uri.isScheme('package') ? uri.pathSegments.first : null;
+    var optionExportPath =
+        options.config.isNotEmpty ? options.config['generate_path'] : null;
+    final outputPath =
+        optionExportPath == null
+            ? 'generated/mediatr.dart'
+            : optionExportPath + '/mediatr.dart';
+    imports.add('import \'package:${packageName}/${outputPath}\';');
 
     // TypeChecker'ları bir kez oluştur
     final commandHandlerChecker = TypeChecker.fromRuntime(
@@ -158,6 +138,8 @@ class MediatrGenerator extends Generator {
 
     // Import ifadelerini ekle
     imports.forEach(buffer.writeln);
+    buffer.writeln('class MediatrRegister {\n');
+
     buffer.writeln();
 
     // registerCommandHandlers fonksiyonunu oluştur
@@ -198,6 +180,7 @@ class MediatrGenerator extends Generator {
     buffer.writeln('\tregisterQueryHandlers();');
     buffer.writeln('\tregisterQueryListHandlers();');
     buffer.writeln('\tregisterQueryPagedListHandlers();');
+    buffer.writeln('} \n');
     buffer.writeln('} \n');
 
     return buffer.toString();
@@ -292,45 +275,4 @@ class MediatrGenerator extends Generator {
     }
     return commandResultFiles;
   }
-
-  Future<AnnotatedElement?> _getMainFileMediatrAnnotatedElement(
-    List<AssetId> assetIds,
-    BuildStep buildStep,
-  ) async {
-    AnnotatedElement? commandResultFile;
-    for (var assetId in assetIds) {
-      try {
-        final sourceText = await buildStep.readAsString(assetId);
-
-        if (sourceText.contains('part of ') ||
-            sourceText.contains('part of;')) {
-          continue;
-        }
-        final otherLibrary = await buildStep.resolver.libraryFor(assetId);
-        final otherLibraryReader = LibraryReader(otherLibrary);
-
-        // Bu dosyada CommandResultPaternModel annotation'ı var mı?
-        final elements = otherLibraryReader.annotatedWith(
-          TypeChecker.fromRuntime(MainMediatrFile),
-        );
-
-        if (elements.isNotEmpty) {
-          commandResultFile = elements.first;
-          break; // İlk bulduğumuzda döngüden çık
-        }
-      } catch (e) {
-        log.severe('!!! Analyze Error ${assetId.path}: $e !!!');
-      }
-    }
-    return commandResultFile;
-  }
-}
-
-Builder mediatorInitBuilder(BuilderOptions options) {
-  final extension =
-      options.config['extension'] as String? ?? '.mediatr_init.dart';
-  return LibraryBuilder(
-    MediatrGenerator(options),
-    generatedExtension: extension,
-  );
 }

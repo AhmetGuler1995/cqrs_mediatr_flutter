@@ -1,20 +1,19 @@
-// dart format width=80
-// GENERATED CODE - DO NOT MODIFY BY HAND
+// Generated code - do not modify
+// CQRS MediatR implementation for Flutter
+// Generated on: 2025-05-20 16:27:22.519314
 
-// **************************************************************************
-// Generator: MediatrCreator
-// **************************************************************************
-
-// GENERATED CODE - DO NOT MODIFY BY HAND
+import 'dart:async';
 import 'package:cqrs_mediatr_flutter/example/generic_result/result.dart';
 
+// Base Command and Query Classes
 abstract class IBaseCommand<TResult> {}
 
 abstract class IBaseQuery<TResult> {}
 
-// Abstract Main Class Generated
+// Abstract Main Class
 abstract class IBaseHandler {}
 
+// Command and Query Types
 abstract class ICommand<TResult> extends IBaseCommand<TResult> {}
 
 abstract class IAsyncCommand extends IBaseCommand<Future> {}
@@ -27,7 +26,7 @@ abstract class IQueryPagedList<TResult> extends IBaseQuery<TResult> {}
 
 abstract class IAsyncQuery<TResult> extends IBaseCommand<Future<TResult>> {}
 
-// Type Defination Region
+// Type Definitions
 typedef _InstanceFactoryChecker<
   TResult,
   Command extends IBaseCommand<TResult>
@@ -46,7 +45,7 @@ typedef _InstanceFactoryCheckerQueryPagedList<
 > = _IQueryPagedListHandler<Command, TResult> Function();
 typedef InstanceFactory<T extends IBaseHandler> = T Function();
 
-// Handler Abstract Class Type Defination And Abstract Handle Method Generation.
+// Handler Abstract Classes
 abstract class _ICommandHandler<Command extends IBaseCommand<TResult>, TResult>
     extends IBaseHandler {
   Future<Result<TResult>> handle(Command command);
@@ -70,6 +69,7 @@ abstract class _IQueryPagedListHandler<
   Future<Result<TResult>> handle(Command query);
 }
 
+// Concrete Handler Classes
 abstract class ICommandHandler<Command extends IBaseCommand<TResult>, TResult>
     extends _ICommandHandler<Command, TResult> {}
 
@@ -91,7 +91,7 @@ abstract class IQueryPagedListHandler<
 abstract class IAsyncQueryHandler<Query extends IAsyncQuery<TResult>, TResult>
     extends _ICommandHandler<Query, Future<TResult>> {}
 
-// Mediatr Main Process Class Generation...
+// MediatR Main Process Class
 class MediatR {
   static MediatR? _instance;
   static MediatR get instance => _instance ??= MediatR();

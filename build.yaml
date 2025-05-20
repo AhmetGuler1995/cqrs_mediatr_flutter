@@ -1,34 +1,15 @@
 targets:
   $default:
     builders:
-      cqrs_mediatr_flutter:mediatr_create:
+      cqrs_mediatr_flutter:mediatr_builder:
         enabled: true
-        generate_for:
-          - lib/**.dart
-        options:
-          output_dir: "lib/generated/mediatr_create"
-
-      cqrs_mediatr_flutter:mediatr_init:
-        enabled: true
-        generate_for:
-          - lib/**.dart
-        options:
-          output_dir: "lib/generated/mediatr_init"
-
-   
+        options: 
+          generate_path: 'data/tool'
 
 builders:
-  mediatr_create:
-    import: "package:cqrs_mediatr_flutter/src/mediatr_creator.dart"
-    builder_factories: ["mediatorCreateBuilder"]
-    build_extensions: {".dart": [".mediatr_create.dart"]}
+  mediatr_builder:
+    import: "package:cqrs_mediatr_flutter/src/mediatr_builder.dart"
+    builder_factories: ["mediatrBuilder"]
+    build_extensions: {"$lib$": [".dart_tool/flutter_gen/cqrs/mediatr.dart"]}
     auto_apply: dependents
-    build_to: source
-    applies_builders: ["source_gen|combining_builder"]
-  mediatr_init:
-    import: "package:cqrs_mediatr_flutter/src/mediatr_generator.dart"
-    builder_factories: ["mediatorInitBuilder"]
-    build_extensions: {".dart": [".mediatr_init.dart"]}
-    auto_apply: dependents
-    build_to: source
-    applies_builders: ["source_gen|combining_builder"]
+    build_to: cache
