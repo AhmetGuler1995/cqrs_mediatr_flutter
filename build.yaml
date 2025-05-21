@@ -3,9 +3,10 @@ targets:
     builders:
       cqrs_mediatr_flutter:mediatr_builder:
         enabled: true
-        include:
+        generate_for:
+          include:
             - lib/**/*.dart
-        exclude:
+          exclude:
             - lib/**/*.g.dart
             - lib/**/*.freezed.dart
             - lib/**/*.mocks.dart
