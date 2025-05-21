@@ -11,7 +11,13 @@ class MediatrRegisterGenerator extends Generator {
 
   @override
   Future<String> generate(LibraryReader library, BuildStep buildStep) async {
-    final assetIds = await buildStep.findAssets(Glob('lib/**/*.dart')).toList();
+    final assetIds =
+        await buildStep
+            .findAssets(Glob('lib/**/*.dart'))
+            .where((e) => e.extension != ".g.dart")
+            .where((e) => !e.path.endsWith('.freezed.dart'))
+            .where((e) => !e.path.endsWith('.g.dart'))
+            .toList();
     final buffer = StringBuffer();
     buffer.writeln('');
     buffer.writeln('// GENERATED CODE - DO NOT MODIFY BY HAND');
@@ -78,7 +84,11 @@ class MediatrRegisterGenerator extends Generator {
     );
     final queryHandlerChecker = TypeChecker.fromRuntime(QueryRegisterHandler);
 
-    await for (var input in buildStep.findAssets(Glob('lib/**/*.dart'))) {
+    await for (var input in buildStep
+        .findAssets(Glob('lib/**/*.dart'))
+        .where((e) => e.extension != ".g.dart")
+        .where((e) => !e.path.endsWith('.freezed.dart'))
+        .where((e) => !e.path.endsWith('.g.dart'))) {
       final sourceText = await buildStep.readAsString(input);
 
       if (sourceText.contains('part of ') || sourceText.contains('part of;')) {
@@ -121,7 +131,7 @@ class MediatrRegisterGenerator extends Generator {
           hasAnnotations = hasAnnotations || isRelevantAnnotation;
         }
       } catch (e) {
-        log.severe(
+        log.info(
           'Skipping ${input.uri} as it could not be resolved as a Dart library: $e',
         );
         continue;
@@ -132,7 +142,7 @@ class MediatrRegisterGenerator extends Generator {
         queryHandlers.isEmpty &&
         queryPagedListHandlers.isEmpty &&
         queryListHandlers.isEmpty) {
-      log.severe('No annotated handlers found in any files.');
+      log.info('No annotated handlers found in any files.');
       return '';
     }
 
@@ -226,12 +236,13 @@ class MediatrRegisterGenerator extends Generator {
   ) async {
     List<AnnotatedElement?> commandResultFiles = <AnnotatedElement?>[];
     for (var assetId in assetIds) {
-      final sourceText = await buildStep.readAsString(assetId);
-
-      if (sourceText.contains('part of ') || sourceText.contains('part of;')) {
-        continue;
-      }
       try {
+        final sourceText = await buildStep.readAsString(assetId);
+
+        if (sourceText.contains('part of ') ||
+            sourceText.contains('part of;')) {
+          continue;
+        }
         final otherLibrary = await buildStep.resolver.libraryFor(assetId);
         final otherLibraryReader = LibraryReader(otherLibrary);
 

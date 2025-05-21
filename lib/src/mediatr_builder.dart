@@ -174,7 +174,13 @@ class MediatRGenerator extends Generator {
     BuildStep buildStep,
     Type annotation,
   ) async {
-    final assetIds = await buildStep.findAssets(Glob('lib/**/*.dart')).toList();
+    final assetIds =
+        await buildStep
+            .findAssets(Glob('lib/**/*.dart'))
+            .where((e) => e.extension != ".g.dart")
+            .where((e) => !e.path.endsWith('.freezed.dart'))
+            .where((e) => !e.path.endsWith('.g.dart'))
+            .toList();
     for (var assetId in assetIds) {
       final sourceText = await buildStep.readAsString(assetId);
 
