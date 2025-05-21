@@ -1,5 +1,14 @@
 targets:
   $default:
+    sources:
+      include:
+        - lib/**
+        - test/**
+      exclude:
+        - "**/*.g.dart"
+        - "**/*.freezed.dart"
+        - "**/*.mocks.dart"
+        - lib/**/*.config.dart
     builders:
       cqrs_mediatr_flutter:mediatr_builder:
         enabled: true
