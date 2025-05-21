@@ -504,6 +504,10 @@ class MediatRBuilder implements Builder {
     final outputPath = path.join('lib', optionExportPath, 'mediatr.dart');
 
     final generator = MediatRGenerator(options);
+    var pathFile = buildStep.inputId.path;
+    if (pathFile.contains('.g.dart') || pathFile.contains('.freezed.dart')) {
+      return;
+    }
     final library = LibraryReader(await buildStep.inputLibrary);
     final generatedCode = await generator.generate(library, buildStep);
 
@@ -527,7 +531,10 @@ class MediatRBuilder implements Builder {
           optionExportPath,
           'mediatr_register.dart',
         );
-
+    var pathFile = buildStep.inputId.path;
+    if (pathFile.contains('.g.dart') || pathFile.contains('.freezed.dart')) {
+      return;
+    }
     final generator = MediatrRegisterGenerator(options);
     final library = LibraryReader(await buildStep.inputLibrary);
     final generatedCode = await generator.generate(library, buildStep);
